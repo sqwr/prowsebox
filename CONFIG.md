@@ -67,7 +67,7 @@ The content of the configuration file is shown below
 			"commands.doitsec.net": "commands.doitsec.net"
 		}
  	},
- 	"setup": "prowsebox"
+ 	"setup": "prowsebox" // or sqwr
 }
 ```
 
@@ -106,8 +106,11 @@ Boolean value to launch the browser in headless (default) or headful mode. This 
 
 
 ## requestypes
+Types of requests whose headers are to be logged. Differences exist between automation tools, i.e. [Puppeteer/Playwright](https://playwright.dev/docs/api/class-request#request-resource-type) or [WebExtensions](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/ResourceType). When the 
 
-
+## setup
+- `prowsebox`: default value, passively monitors service workers events and APIs calls
+- `sqwr`: enforces the [swebRequest](https://github.com/sqwr/swebrequest) security and privacy features on top of a service worker.
 
 ## Examples
 1. Chrome Devtools Protocol
