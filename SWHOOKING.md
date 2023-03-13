@@ -2,6 +2,42 @@
 The command ```node gen_swhook.js``` outputs `swhook.js`, which our service worker monitor, which makes extensive usage of the [Proxy API]() to passively hook into most service workers events registration, invocation and APIs calls, in order to log their arguments. To generate `swhook.js`, the following files are taken into consideration:
 - `swhooking.js` is the boilerplate service worker hooker. It contains placeholders that will be filled depending on the following configuration files.
 - `configswshooker.json` contains the list of service workers APIs and events to monitor. By default, most APIs specific to service workers are supported. Under the `customapis` section, additional APIs can be listed. 
+```json
+{
+	"events": ["install", "activate", "fetch", "sync", "push", "notificationclick", "notificationclose", "notificationshow", "pushsubscriptionchange", "message", "periodicsync"],
+	"apiscalls": {
+		"fetch": true,
+		"importScripts": true,
+		"skipWaiting": true,
+		"CacheStorage": ["open", "delete", "match", "has", "keys"],
+		"Cache": ["addAll", "add", "put", "delete", "match", "matchAll", "keys"],
+		"navigationPreload": ["enable", "disable", "setHeaderValue", "getState"],
+		"indexedDB": ["open"],
+		"IDBObjectStore": ["add", "put", "clear", "delete", "get", "getKey", "getAll", "getAllKeys"],
+		"Client": ["postMessage"],
+		"Clients": ["claim", "get", "openWindow", "matchAll"],
+		"PushManager": ["getSubscription", "permissionState", "subscribe"],
+		"Crypto": ["getRandomValues", "randomUUID"],
+		"crypto":  ["getRandomValues", "randomUUID"],
+		"SubtleCrypto": ["decrypt", "deriveBits", "deriveKey", "digest", "encrypt", "exportKey", "generateKey", "importKey", "sign", "unwrapKey", "verify", "wrapKey"]
+	},
+	"customapiscalls": {
+		"FetchEvent.prototype": ["respondWith"],
+		"ExtendableEvent.prototype": ["waitUntil"],
+		"CookieStore.prototype": ["get", "set", "getAll", "delete"],
+		"registration": ["showNotification", "getNotifications", "update", "unregister"],
+		"eval": true,
+		"atob": true, 
+		"btoa": true,
+		"decodeURIComponent": true,
+		"decodeURI": true,
+		"encodeURI": true,
+		"URLSearchParams.prototype": ["get", "entries", "has", "getAll", "keys", "set", "sort", "forEach", "toString", "values", "delete", "append"]
+	},
+	"BroadcastChannel": true,
+	"dumpswheadersandcontent": false
+}
+```
 - `config.json`: many parameters in the general configuration file of `ProwseBox` influence the output `swhook.js`. Overall, these parameters specify how `swhook.js` will be injected in service workers context, and how the logs will be collected:
   - **Hooking**: Puppeteer/Playwright automating Chromium browsers have direct access to service workers contexts. They can inject `swhook.js` when new service workers contexts are created, and make it execute first to amend the execution context. For the data collection, they can periodically extract the monitored logs. Note that we observe a couple of limitations of this method . First, when the new context is created, [CacheStorage]() and [CookieStore]() APIs are not yet present in the execution context. To address this limitation, we rely on other APIs that are available right away, and when one of them is invoked, usually at that time the cache and cookies APIs are also available to be proxied. In general, we do not recommend this method, even though it is convenient because it does not require any external tool like an extension or mitmproxy for hooking service workers. For extensions and Mitmproxy, we do not have such a limitation: all APIs can be proxied, and `swhook.js` prepended to the original service worker code: this will ensure that the service worker context is fully amended (APIs and events are proxied) before the execution of the original service worker starts.
   - **Logs collection**: There are 3 main methods for collecting the service workers APIs logs:
@@ -52,7 +88,132 @@ The APIs that are hooked are summarized as follows.
 | [encodeURI](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURI) | | encodes URIs | `proxyAndRegisterArguments` |
 | [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) | [append](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/append), [delete](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/delete), [entries](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/entries), [forEach](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/forEach), [get](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/get), [getAll](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/getAll), [has](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/has), [keys](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/keys), [set](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/set), [sort](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/sort), [toString](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/toString), [values](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/values) | manipulating URLs arguments | `proxyAndRegisterArguments` |
 
-## Collected Data
+## Collected Data Structure
+The logs collected for each 
+```javascript
+{
+    name: string, // name of the API/event
+    description: string, // unique string to distinguish an API/event from others
+    argsList: [ arg1, ...] // arguments of APIs calls...
+        || { name: string, callback: string }, // event handler function name and callback string
+    event: { // relevants to events
+        data: any // relevant for message, push, sync, notificationclick events
+        origin: string // relevant to message event
+        type: string // same as event name
+    },
+    request: { // relevant to fired fetch events, fetch calls, and cache APIs that handle requests(i.e. caches.match)
+        url: string, // request url
+        headers: {
+            name1: value1,
+            name2: value2,
+            ...
+        },
+        destination: string, // request type: document, image, script, etc.
+		credentials: string, // same-origin, omit, include
+		mode: string, // request mode: navigate, cors, no-cors, same-origin, websocket
+		method: string // request method: get, post, put, ...
+		referrer: string, // request referrer: about:client, client, a URL, ...
+		integrity: string, // request integrity 
+		redirect: string, // request redirect
+    }, 
+    response: { // relevant to fetch calls and cache operations that handle responses (cache.put)
+        headers: {
+            name1: value1,
+            name2: value2,
+            ...
+        },
+        url: string, // response url if available
+        ok: boolean, // true for 200+ responses status codes
+        type: string, // response type: basic, cors, opaque, etc.
+        status: number, // response status code: i.e. 200, etc.
+        statusText: string, // response statusText: i.e. OK
+        byteLength: number // response size (for same-origin and CORS-compliant responses)
+    }, 
+    timestamp: number // Value of Date.now() when the API is logged
+}
+```
+where `name` and `description` are help identify 
+The chosen `description` for an API or event must be unique because it is the distinguishing key when APIs or events have the same `name`, i.e. `get`, `put`, `add` that appears on many APIs
+
+### Events
+Two separate logs are recorded for events, when they are registered, and when they are fired. Event handlers can be setup by calling the `addEventListener` global method, or by the setting the `onEVENTNAME` object (where `EVENTNAME` is the event name, i.e. `install`, `fetch`, or `message`).
+1. The structure of the log during an event registration is as follows: 
+```javaScript
+{
+    name, description,
+    argsList: { name, body },
+    timestamp
+}
+```
+- `name` is of the form `self.EVENTNAME`
+- `description` of the form `registered.self.EVENTNAME` 
+- `EVENTNAME` is any of the events, i.e. `install`, `fetch`, `activate`, `push`, `message`, etc.
+- `argsList.name` is the name of the event handler function (or the empty string if this is an anonymous function) and 
+- `argsList.body` is the event handler function body turned into a string.
+2. The structure of the event log when it is fired is as follows:
+```javaScript
+{
+    name, description, 
+    event: { data?, origin?, type },
+    request?: {} // serialized request information for fetch events
+}
+```
+- `name` is of the form `EVENTNAME`
+- `description` of the form `self.EVENTNAME` 
+- `EVENTNAME` is any of the events, i.e. `install`, `fetch`, `activate`, `push`, `message`, etc.
+- `event.type` is basically the same as `EVENTNAME` but is read from the fired event object itself.
+- `event.data` relevant for `message` and `push` events. For push events, the `event.data` is the text representation of the data.
+- `event.origin` relevant for `message` events
+- `request` object is only relevant for `fetch` events 
+
+It is worth mentionning that, as we monitor all events registered through `addEventListener` are also captured even though they are not listed in the Table above. The only limitation is when those events are registered by setting their related `onEVENTNAME` handler function global property.
 
 
+### Fetch API
+The [fetch event](https://developer.mozilla.org/en-US/docs/Web/API/FetchEvent) logged according to the description done in the [events](#events) section above, is to be distinguished from the [fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) effectively used for issuing requests to download resources from a remote server. The logs for the fetch API have the following structure:
+```javascript
+{
+    name: "fetch", "description": "fetch",
+    request: { ... }, response: { ... }
+}
+```
+The serialized request and response do not include the bodies (to save storage space)
 
+### Cache operations
+Two main APIs perform operations on the cache storage. 
+- For [CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage), its methods calls are logged as follows:
+  - `name` is the name of the method: `match`, `has`, etc.
+  - `description` is the name of the method prefixed with `CacheStorage.prototype`: i.e. `CacheStorage.prototype.match`, `CacheStorage.prototype.has`
+- For [Cache](https://developer.mozilla.org/en-US/docs/Web/API/Cache), its methods calls are logged as follows:
+  - `name` is the name of the method: i.e. `addAll`, `put`
+  - `description` is the name of the method prefixed with `Cache.prototype`: i.e. `Cache.prototype.addAll`, or `Cache.prototype.put`
+  
+Most of these methods of these APIs handle request objects, and some such as [Cache.put](https://developer.mozilla.org/en-US/docs/Web/API/Cache/put) are additionally passed response objects. In that case, the request/response are serialized and added to the log. For methods that do not handle request or response objects, the `argsList` entry is added to the log with the list of the method invocation arguments. 
+
+### Other APIs
+For all other APIs, the `argsList` entry is always added to the log, which holds the arguments passed to the API when it was invoked. Notably, we do not log the arguments of the [SubtleCrypto](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto) methods (because those are usually large bytes of array which occupy a log of storage space).
+- For all APIs, the `name` entry is the name of the API, no matter if it is a global API (i.e. `eval`, `atob` or a method under another API)
+- For the `description` entry:
+  - its value is the name of the API (when it is a global API, i.e. `importScripts`, `eval`, `atob`, etc.). For the `skipWaiting` API, the description is prefixed with `self.`
+  - or the name of the method prefixed with its parent object name: i.e. `registration.showNotification`, `indexedDB.open`. In a good number of cases, the name of the parent object is prefixed with `prototype`. That is the case for: `NavigationPreload`, `PushManager`, `IDBObjectStore`, `URLSearchParams`, `Clients`, `CookieStore`, `ExtendableEvent`, `FetchEvent`
+  
+
+### Custom APIs
+When adding custom APIs, make sure that they exist. In particular, when you are listing methods to be monitored, check if the methods are properties defined directly under the parent object, or if they are part of the parent object prototype. In this case, suffix the parent object with `prototype`. The excerpt of `configswshooker.json` shows various APIs we have as custom apis calls. 
+```json
+{
+    "customapiscalls": {
+		"FetchEvent.prototype": ["respondWith"],
+		"ExtendableEvent.prototype": ["waitUntil"],
+		"CookieStore.prototype": ["get", "set", "getAll", "delete"],
+		"registration": ["showNotification", "getNotifications", "update", "unregister"],
+		"eval": true,
+		"atob": true, 
+		"btoa": true,
+		"decodeURIComponent": true,
+		"decodeURI": true,
+		"encodeURI": true,
+		"URLSearchParams.prototype": ["get", "entries", "has", "getAll", "keys", "set", "sort", "forEach", "toString", "values", "delete", "append"]
+	}
+}
+```

@@ -82,15 +82,5 @@ The `name` is of the form `self.EVENTNAME` and the `description` of the form `re
     request?: {} // serialized request information for fetch events
 }
 ```
-## fetch calls
 
-## cache operations
-
-## push notifications
-
-## other apis
-
-## serialized request
-
-## serialized response
 
