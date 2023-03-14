@@ -29,3 +29,5 @@ All | WebClient | MiTM | &#9745; | &#x2612; | **manual** | &#x2612; |
 ### Discovery
 ### Coverage
 ### Offline
+
+## Collected Data

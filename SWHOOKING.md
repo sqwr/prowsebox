@@ -45,6 +45,13 @@ The command ```node gen_swhook.js``` outputs `swhook.js`, which our service work
     - through [broadcast channel](): pages under the scope of the service worker can listen on the chanel name `serviceworkerinformationtobesaved` in order to collect service workers logs. This is our prefered way for collecting the logs: it can be leverages by web pages, but also by content scripts of browser extensions, and even as an alternative to directly accessing service workers contexts when Puppeteer/Playwright automate Chromium browsers.
     - from the [Mitmproxy server](): the logs are POSTed via a fetch call, using the service worker origin suffixed with `/?serviceworkerinformationtobesaved`. These special URLs are detected by the Mitmproxy, and are not forwared to the target web servers: the logs are extracted and saved, and the Mitmproxy directly responds to the request.
 
+## Hooking Tools
+Service workers hooking or the injection of `swhook.js` to be executed first in the context of a service worker, is achieved with 3 methods:
+- [Mitmproxy](#mitmproxy): works for all setups
+- [webRequest API](#webrequest-api): only for Firefox browsers automated by an extension (Desktop and Android)
+- [ServiceWorker Domain]()
+
+
 
 ## APIs hooking
 Most APIs hooking is done usinng the JavaScript Proxy API. Following is how one can passively monitor fetch requests and responses. 

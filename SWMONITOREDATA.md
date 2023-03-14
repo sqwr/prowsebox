@@ -1,11 +1,13 @@
-# Monitor
+# ProwseBox Data
+
+## swstrancohomes
 ```javascript
 [ pagesVisited, requestInformations, responseInformations, swsRegs, '', swsData, swsScopes, swsClients, cacheStorage, cookiesStore, swsDuplicates, xData, pagesLinks, pagesVisitedOffline, domInfos, domInfosOffline, pagesLinksOffline, coveragePages ]
 ```
 
 This is an **array**: we name the items (they refer to the names of the variables used to store the parts of the data at runtime) to aid the description that follows. The data is JSON-stringified before storage. 
 
-## pagesVisited
+### pagesVisited
 Object literal associating a URL to be navigated to its final URL navigated. The special `error` value indicates an error during URL navigation (i.e. timeout, certificate issue, etc.)
 ```json
 {
@@ -15,7 +17,7 @@ Object literal associating a URL to be navigated to its final URL navigated. The
 }
 ```
 
-## requestInformations
+### requestInformations
 An object literal associating requests URLs to their headers. The entries in this object follow the schema 
 ```json
 {
@@ -39,10 +41,10 @@ where:
   
 Dumping the headers of all requests can take a lot of space. To avoid that, by default we only log requests of type `document`. The[requestypes](CONFIG.md#requestypes) configuration option can be adjusted to the types of requests to be logged.
 
-## responseInformations
+### responseInformations
 This object contains response headers. The structure is similar to [requestsInformation](#requestinformations). 
 
-## swsRegs
+### swsRegs
 An object holding information about service workers registrations. It structure is as follows:
 ```javaScript
 {
@@ -86,7 +88,7 @@ An object holding information about service workers registrations. It structure 
 - `coverage` was an unsuccessfull attempt to collect service workers coverage information with [Istanbul](https://istanbul.js.org/): may be added in the future
 
 
-## swsData
+### swsData
 This object contains the monitored service workers events and APIs calls. It general structure is as follows:
 ```javaScript
 {
@@ -111,3 +113,183 @@ This object contains the monitored service workers events and APIs calls. It gen
     "..."
 }
 ```
+The structure of `datum$i` is described in [service workers apis logs structure](SWHOOKING.md#collected-data-structure)
+The reason why we grouped the collected data by `datasize` was to avoid duplicates, i.e. avoid logging the same API call again and again (i.e. `IndexedDB.open`)
+
+### swsScopes
+An object listing service workers scopes (fully qualified URLs)
+```json
+{
+    "scopeURL1": "",
+    "scopeURL2": "",
+    "..."
+}
+```
+
+### swsClients
+An object associating service workers scopes (fully qualified URLs) to the clients (pages) under that scope
+```json
+{
+    "scopeURL1": {
+        "pageURL1": "",
+        "pageURL2": "",
+    },
+    "scopeURL2": { ... },
+    "..."
+}
+```
+
+### cacheStorage
+An object associated an origin to the resources found in the origin's cache. 
+```javascript
+{
+    "origin1": {
+        "resourceURL1": [ request, response ]
+        "resourceURL2": { ... },
+        "..."
+    },
+    "origin2": { ... },
+    "..."
+}
+```
+where request and response objects are serialized as in [sws hooking logs](SWHOOKING.md#collected-data-structure)
+
+### CookieStore
+An object associated set cookies to their domains, names and values
+```javascript
+{
+    "domain1": {
+        "cookieName1": {
+            "cookieValue1": {
+                domain: "domain1",
+                name: "cookieName1",
+                value: "cookieValue1",
+                httpOnly: boolean,
+                hostOnly: boolean,
+                path: string,
+                expirationDate: float,
+                sameSite: string,
+                secure: boolean,
+                session: boolean,
+                storeId: string
+            },
+            "..."
+        },
+        "cookieName2": { ... }
+    },
+    "domain2": { ... }
+}
+```
+Note that the information associated to each cookie may vary depending on the browser, and the automation tool. The example above is collected by a Chrome extension. 
+
+
+### swsDuplicates
+This object is usually empty. It is only set when Puppeteer/Playwright with Chromium browsers. 
+```javascript
+{
+    "serviceworkerURL1": {
+        description: {
+            "datasize1": number,
+            "datasize2": number,
+            "..."
+        }
+    },
+    "serviceworkerURL2": { ... },
+    "..."
+}
+```
+It associates each service worker API `description` to the number of time the API has been logged (with a specific log size: the log size is the JSON string size of the log).
+
+### xData
+This entry is there for compatibility reasons. Its purpose was to hold data collected from browser extensions monitoring. 
+In the current version of the framework, this object is empty
+
+### pagesLinks
+This object associates origin to a list of same-origin URLs found on different navigated pages
+```json
+{
+    "origin1": {
+        "pageURL1": "",
+        "pageURL2": "",
+        "..."
+    },
+    "origin2": { ... },
+    "..."
+}
+```
+
+### pagesVisitedOffline
+This object is most of the times empty, and has been kept for compatibility reasons. It was added to hold URLs that are navigated when the browser was taken offline to test how service workers behave in this network condition. This object is no more useful because the offline mode of service workers is tested via an independent run of the framework. For this run, the related [pagesVisited](#pagesvisited) object will contain the information of pages that was successfully navigated when the browser is offline
+
+### domInfos
+This object associates navigated top-level URLs to various information extracted from their DOMs. The snapshot of the DOM is taken multiple times (every 15 seconds)
+```javascript
+{
+    "pageURL1": [ {
+        resources: {
+            link: { linkURL1: "", ...}, // the values referenced by the ["href", "prefetch", 'alternate', 'next', 'prerender', 'prev'] attributes of the <link> tag
+            iframe: { iframeURL1: "", ... }, // the values referenced by the src attribute of <iframe> tags
+            script: { scriptURL1: "", ...}, // the values referenced by the src attribute of <script> tags
+            img: { imageURL1: "", ... }, // the values referenced by the src and srcset attribute of <img> tags
+            a: { anchorURL1: "", ...}, // values referenced by the ["href", "ping"] attributes of the <a> tags
+            as: { // values referenced by the src attribute of <a> tags, associated to the values of the target, ref, referrerpolicy and ping attributes
+                anchorURL1: {
+                    target: string,
+                    rel: string,
+                    referrerpolicy: string,
+                    ping: string
+                }
+            },
+            audio: { audioURL1: "", ...},  // values referenced by the src attribute of the <audio> tags
+            video: { videoURL1: "", ...}, // values referenced by the src and poster attributes of the <video> tags
+            source: { sourceURL1: "", ...}, // values referenced by the src and srcset attributes of the <source> tags
+            track: { trackURL1: "", ...}, // values referenced by the src attribute of the <track> tags
+        },
+        location: { 
+            href: "pageURL1",
+            origin: "pageOrigin",
+            domain: "pageDomain"
+        },
+        register: [ argsList1, ... ], // service worker registrations arguments
+        dworkers: [ argsList1, ... ], // spawn dedicated workers arguments
+        shworkers: [ argsList1, ... ], // spawn shared workers arguments
+        registrations: [ 
+            {
+                "registeredServiceWorkerScopeURL1": "registeredServiceworkerURL1", ...
+            }, 
+            [ argsList1 ], // service workers registrations arguments 
+            "pageURL1", 
+            {
+                "registeredServiceWorkerScopeURL1": "registeredServiceworkerURL1", ...
+            }, 
+            [ pushsubscription1, ...], // each item is an element of reg.pushManager.getSubscription()
+        ],
+        pushsubscribe: [ argsList1, ... ], // calls to PushManager.subscribe 
+        pushsubscriptions: [ pushsubscription1, ...], // each item is an element of reg.pushManager.getSubscription()
+        notifications: [ argsList1, ... ], // calls to Notifications.requestPermission()
+        manifest: {
+            "manifestURL1": boolean // the value of the boolean indicates if the manifest is fetched with credentials included (true) or omitted (false)
+        },
+        metacsps: [ csp1, ...], // content security policies included in the DOM
+        domsize: number, // the size in bytes of the DOM: document.body.parentElement.outerHTML
+        domhash: string, // the fuzzy has of the DOM (using ssdeep)
+        compatibility: string // caches accesses performed directly from web pages
+    }, ...],
+    "pageURL2": { ... },
+    "..."
+}
+```
+
+
+### domInfosOffline
+This object was meant to contain [dominfos](#dominfos) when testing service workers offline mode. But it is no more used, and defaults to the empty object
+
+### pagesLinksOffline
+This object was meant to contain [pageLinks](#pageslinks) when testing service workers offline mode. But it is no more set, and defaults to the empty object
+
+### coveragePages
+An array containing the list of in-scope pages URLs navigated when the coverage phase is enabled. It is this list of URLs which is used during the separate offline phase in order to assess service workers which work when the user is offline
+
+
+## swscontent
+The folder `swscontent` is written by []
