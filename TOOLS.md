@@ -1,10 +1,13 @@
 This file describes the different tools leveraged in this framework. 
 
+
 # Playwright
 
 # Puppeteer
 
 ## Chrome Devtools Protocol 
+
+# Service workers hooking methods
 
 
 # Mitmproxy

@@ -1,6 +1,7 @@
 # ProwseBox Data
 
 ## swstrancohomes
+When []
 ```javascript
 [ pagesVisited, requestInformations, responseInformations, swsRegs, '', swsData, swsScopes, swsClients, cacheStorage, cookiesStore, swsDuplicates, xData, pagesLinks, pagesVisitedOffline, domInfos, domInfosOffline, pagesLinksOffline, coveragePages ]
 ```

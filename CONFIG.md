@@ -71,6 +71,9 @@ The content of the configuration file is shown below
 }
 ```
 
+## customprofile
+An optional boolean indicating whether a custom browser profile should be created to store the (temporary) browser logs. 
+- `false`: default value
 ## grouping
 
 ## headless
@@ -79,30 +82,36 @@ Boolean value to launch the browser in headless (default) or headful mode. This 
   - `false`: the browser is spawn in headfull mode
 
 
-- `headless`: 
-- `automation`: the automation tool
-  - `playwright`: [Playwright](https://playwright.dev). Works for desktop Firefox, Safari and chromium browsers (Chrome, Edge, Brave, Avast, except Opera), Chrome on Android
-  - `puppeteer`: [Puppeteer](https://pptr.dev/). Works only for desktop chromium browsers (except Opera)
-  - `extension`: use a [WebExtension](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest) to automate the analysis. 
-    - Chromium browsers. This has to 
-    - Firefox: the [web-ext](https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/) NPM package is used to automate Firefox on Desktop and Android. The Firefox on Android requires [ADB](https://developer.android.com/studio/command-line/adb). 
-- `browser`: the type of browser
-  - `chromium`: (default) for Chromium browsers
-  - `firefox`: for firefox browsers
-  - `safari` or `webkit` for Safari browsers
-  - 
-- `platform`: the type of platform
-  - `desktop`: (default)
-  - `android`: android platform
-    - for Chrome `browser`
-    - Firefox browser on Android with [web-ext]()
-- `mitmproxy`: service workers are hooked with 
-  - `mitmdump`: (recommended) [Mitmproxy](https://mitmproxy.org/)
-  - `mockttp`: (partial support) [Mockttp](https://github.com/httptoolkit/mockttp)
-- `setup`: the type of setup
-  - `prowsebox` (default)
-  - `sqwr`: for the anlysis with 
-- `extensions`: extensions to be installed on a Chromium browser when `automation` is done with `playwright` or `puppeteer`. Note that this is not equivalent to doing
+## automation
+The tool to use for automation. Its values can be 
+- `playwright`: [Playwright](https://playwright.dev). Works for desktop Firefox, Safari and chromium browsers (Chrome, Edge, Brave, Avast, except Opera), Chrome on Android
+- `puppeteer`: [Puppeteer](https://pptr.dev/). Works only for desktop chromium browsers (except Opera)
+- `extension`: use a [WebExtension](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest) to automate the analysis. 
+  - Chromium browsers. This has to 
+  - Firefox: the [web-ext](https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/) NPM package is used to automate Firefox on Desktop and Android. The Firefox on Android requires [ADB](https://developer.android.com/studio/command-line/adb). 
+  
+## browser
+The type of browser. This key is optional 
+- `chromium`: (default) for Chromium browsers
+- `firefox`: for firefox browsers
+- `safari` or `webkit` for Safari browsers
+
+## platform
+The type of platform
+- `desktop`: (default)
+- `android`: android platform
+  - for Chrome `browser`
+  - Firefox browser on Android with [web-ext]()
+
+
+## mitmproxy
+If and which HTTPs proxy to use to intercept HTTP requests/responses, and hook service workers in particuarl. 
+- `mitmdump`: (recommended) [Mitmproxy](https://mitmproxy.org/)
+- `mockttp`: (partial support) [Mockttp](https://github.com/httptoolkit/mockttp)
+Even though we have supported `mockttp` in the past, mostly to provide an alternative to `mitmdump`, we have done most of our measurements using the latter, and recommand going with it to get the most of our analysis framework.  
+
+## extensions
+extensions to be installed on a Chromium browser when `automation` is done with `playwright` or `puppeteer`. Note that this is not equivalent to doing the automation with an extension. This option simply makes it possible for you to install an extension that implements a custom logic on top of the normal analysis being done.
 
 
 ## requestypes
@@ -111,6 +120,7 @@ Types of requests whose headers are to be logged. Differences exist between auto
 ## setup
 - `prowsebox`: default value, passively monitors service workers events and APIs calls
 - `sqwr`: enforces the [swebRequest](https://github.com/sqwr/swebrequest) security and privacy features on top of a service worker.
+
 
 ## Examples
 1. Chrome Devtools Protocol

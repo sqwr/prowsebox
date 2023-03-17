@@ -1,5 +1,5 @@
 # Service Worker Hooking
-The command ```node gen_swhook.js``` outputs `swhook.js`, which our service worker monitor, which makes extensive usage of the [Proxy API]() to passively hook into most service workers events registration, invocation and APIs calls, in order to log their arguments. To generate `swhook.js`, the following files are taken into consideration:
+The command ```node gen_swhook.js``` outputs `swhook.js`, which our service worker monitor, which makes extensive usage of the [Proxy API](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy) to passively hook into most service workers events registration, invocation and APIs calls, in order to log their arguments. To generate `swhook.js`, the following files are taken into consideration:
 - `swhooking.js` is the boilerplate service worker hooker. It contains placeholders that will be filled depending on the following configuration files.
 - `configswshooker.json` contains the list of service workers APIs and events to monitor. By default, most APIs specific to service workers are supported. Under the `customapis` section, additional APIs can be listed. 
 ```json
@@ -45,12 +45,6 @@ The command ```node gen_swhook.js``` outputs `swhook.js`, which our service work
     - through [broadcast channel](): pages under the scope of the service worker can listen on the chanel name `serviceworkerinformationtobesaved` in order to collect service workers logs. This is our prefered way for collecting the logs: it can be leverages by web pages, but also by content scripts of browser extensions, and even as an alternative to directly accessing service workers contexts when Puppeteer/Playwright automate Chromium browsers.
     - from the [Mitmproxy server](): the logs are POSTed via a fetch call, using the service worker origin suffixed with `/?serviceworkerinformationtobesaved`. These special URLs are detected by the Mitmproxy, and are not forwared to the target web servers: the logs are extracted and saved, and the Mitmproxy directly responds to the request.
 
-## Hooking Tools
-Service workers hooking or the injection of `swhook.js` to be executed first in the context of a service worker, is achieved with 3 methods:
-- [Mitmproxy](#mitmproxy): works for all setups
-- [webRequest API](#webrequest-api): only for Firefox browsers automated by an extension (Desktop and Android)
-- [ServiceWorker Domain]()
-
 
 
 ## APIs hooking
@@ -90,9 +84,12 @@ The APIs that are hooked are summarized as follows.
 | [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval) | | evaluates JavaScript code represented as string | `proxyAndRegisterArguments` |
 | [atob](https://developer.mozilla.org/en-US/docs/Web/API/atob) | | decodes a base64 string | `proxyAndRegisterArguments` |
 | [btoa](https://developer.mozilla.org/en-US/docs/Web/API/btoa) | | creates a base64 string | `proxyAndRegisterArguments` |
-| [decodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent) | | decodes encoded URLs | `proxyAndRegisterArguments` |
+| [decodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent) | | decodes encoded URLs components | `proxyAndRegisterArguments` |
+| [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) | | encode URLs components| `proxyAndRegisterArguments` |
 | [decodeURI](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURI) | | decodes encoded URLs | `proxyAndRegisterArguments` |
-| [encodeURI](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURI) | | encodes URIs | `proxyAndRegisterArguments` |
+| [encodeURI](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/escape) | | encodes URIs | `proxyAndRegisterArguments` |
+| [escape](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/escape) | | escape strings | `proxyAndRegisterArguments` |
+| [unescape](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/unescape) | | unescape strings | `proxyAndRegisterArguments` |
 | [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) | [append](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/append), [delete](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/delete), [entries](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/entries), [forEach](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/forEach), [get](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/get), [getAll](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/getAll), [has](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/has), [keys](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/keys), [set](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/set), [sort](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/sort), [toString](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/toString), [values](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/values) | manipulating URLs arguments | `proxyAndRegisterArguments` |
 
 ## Collected Data Structure
@@ -224,3 +221,42 @@ When adding custom APIs, make sure that they exist. In particular, when you are 
 	}
 }
 ```
+
+# Hooking Methods
+We leverage 3 main methods for hooking service workers, i.e. injecting and making it execute first, the `swhook.js` file in an original service worker code.
+
+## Mitmproxy
+[Mitmproxy](https://mitmproxy.org/) is an efficient, open-source scriptable HTTPS proxy. 
+Most modern, desktop and mobile browsers, provide the ability to redirect all HTTPS requests to a proxy, provided that the proxy Certificate Authority (CA) has been added to the list of CAs trusted by the browser or the device. Mitmproxy makes is possible to write addons (Python3 scripts) to manipulate requests before they are forwarded to the origin server, manipulate responses before they are delivered to the requesting client, or respond directly to requests when they are intercepted, without reaching the target origin server. See [src/mitmproxies/httptamper.py] for the addon used to manipulate HTTPS requests/responses at the level of Mitmproxy, for among other things, injecting `swhook.js` in service workers responses. 
+We recommend the Mitmproxy method for service workers hooking. It is the most universall solution, as it is supported by most browsers. The entries in the [configuration file](CONFIG.md) that enables the Mitmproxy include:
+- `mitmproxy`: its default and currently sole value is `mitmdump`. `mitmproxy` and `mitmweb` are alternate binaries, but we have not tested how the the addon works with them. We have also tested [Mockttp](https://github.com/httptoolkit/mockttp)  as an alternative, but we have not kept in in the current version of the framework. When any other hooking method is used, or when you do not want to use Mitmproxy, make sure to remove the `mitmproxy` entry in the [configuration](CONFIG.md) file
+- `mitmaddress`: the IP address of the mitmproxy server. In our experiments, we have deployed local Mitmproxy servers, i.e. `127.0.0.1` is a suitable IP address. Nothing prevents you from deploying a remote Mitmproxy server.
+- `mitmiport`: the (initial) port of the Mitmproxy proxy server. By default, this is `8080`
+- `mitmproxies`: the number of concurrent Mitmproxy proxy servers you want to deploy, i.e `8`. The framework will generate the `main_mitmproxies.sh` file that contains `8` Mitmproxy servers, the first one on port `8080`, the second on `8081` and the 8th one on port `8087` (provided that the initial port number is `8080` as in our example)
+- `swshooking`: set this boolean to `true`
+
+
+
+### Fetch metadata
+It is important to inject `swhook.js` only in servcie worker responses, which we recall, as JavaScript programs. To precisely isolate service workers responses, we extensively rely on the [Sec-Fetch-Dest](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-Fetch-Dest) request header of [Fetch metadata](https://developer.mozilla.org/en-US/docs/Glossary/Fetch_metadata_request_header), which is largely supported by modern browsers. Safari browsers are a notable exception
+
+### No fetch metadata
+For simplicity, we could have hooked all JavaScript programs ,by inspecting the  [content-type response header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#textjavascript) for JavaScript MIME types. As one may guess, this solution adds a lot of overhead and potential breakage to websites (i.e. integrity checks on JavaScript responses). In the end, the solution we divised to hook service workers on these browsers that do not support fetch metadata works as follows:
+- We inject a code in HTML pages, which hooks for service workers registration, and directly report the service worker to Mitmproxy. 
+- As all requests and responses go through the Mitmproxy, when a response for that service worker URL is received, Mitmproxy hooks it.
+This solution has to be explicitely configured by settings the entries of the `nofetchmetadata`,  `swsurltomitm` and `mitmhtmhooking` to `true`. 
+
+
+## Puppeteer/Playwright
+Service workers are supported by Puppeteer and Playwright for Chromium browsers. We leverage this feature for hooking service workers. For Playwright (the process is similar for Puppeteer), we listen for [serviceworker events](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-service-worker), get a handle to the service worker target and [evaluateHandle](https://playwright.dev/docs/api/class-worker#worker-evaluate-handle) method to inject our hooks in the service worker context. 
+
+### Limitations
+We have observed that the [cache](https://developer.mozilla.org/en-US/docs/Web/API/Cache) and the [cookiestore](https://developer.mozilla.org/en-US/docs/Web/API/CookieStore) APIs are usually not yet present in the service worker context when we use this method of hooking. To workaround this limitation, we proxy them as soon as any of the other APIs (which are present at the time of hooking) is triggered. Nonetheless, even though it is unlikely that cache operations occur APIs such as importScripts or events such as install, activate or fetch are fired, this is a limitation to bear in mind when using this method. Another question we have not addressed yet for this method of hooking, concerns the update of service workers: we do not know if updated service workers will be successfully monitored. 
+
+## WebRequest API
+This method is only supported by Firefox browsers, on Desktop and Android. Firefox webExtensions can use the [webRequest](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/filterResponseData) to modify HTTP responses. We leverage this with the additional  `webRequestFilterResponse.serviceWorkerScript` permission to hook service worker responses by prepending the content of `swhook.js`. As Firefox also support [fetch metadata](#fetch-metadata), we aditionally filter service worker responses based on these headers. Note that, as they are not related to any tab or window, service workers requests get assign `-1` as their `tabId`. We leverage all these information to precisely isolate service worker responses and only hook those. 
+
+
+# Service workers logs collection
+- BroadcastChannel
+- Puppeteer / Playwright
