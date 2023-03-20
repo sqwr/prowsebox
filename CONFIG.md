@@ -71,9 +71,29 @@ The content of the configuration file is shown below
 }
 ```
 
+## swscontent
+A boolean value (to set to `true`) in order to enable the logging of service workers code.
+See [swscontent](SWMONITOREDATA.md#swscontent) for more details about the structure of logged service workers code.
+
+## importedscripts
+A boolean value (to set to `true`) in order to enable the loggin of service workers code
+See [importedscripts](SWMONITOREDATA.md#importedscripts) for more details about the structure of logged imported scripts code.
+
+## webmanifests
+A boolean value (to set to `true`) in order to enable the logging of web manifests content.
+See [webmanifests](SWMONITOREDATA.md#webmanifests) for more details about the structure of logged web manifests content.
+
+## io
+Under this 
+
+
 ## customprofile
-An optional boolean indicating whether a custom browser profile should be created to store the (temporary) browser logs. 
+An optional boolean indicating whether a custom browser profile should be created to store the (temporary) user data (cookies, service workers codes, cached resources, etc.). With Playwright, this is equivalent to  [launching a persistent content](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context) when creating the browser instance to handle the automation.  
 - `false`: default value
+- `true`: a custom folder, usually created under `profiles` (or any other folder if you have configured it differenty)
+
+
+
 ## grouping
 
 ## headless

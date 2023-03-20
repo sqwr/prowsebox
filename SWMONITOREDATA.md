@@ -1,7 +1,17 @@
 # ProwseBox Data
 
+- [swstrancohomes](#swstrancohomes)
+- [mitmswstrancohomes](#mitmswstrancohomes)
+- [swscontent](#swscontent)
+- [importedscripts](#importedscripts)
+- [webmanifests](#webmanfiests)
+- [webworkers](#webworkers)
+- [documents](#documents)
+
+
 ## swstrancohomes
-When []
+The items in this folder are data collected and stored by the automation tool. When the `offline` mode is enabled, the item specifically ends with `.offline`. The way the offline mode works it to take the list of URLs navigated during the coverage phase, and navigate them again, and collect and store the data. 
+
 ```javascript
 [ pagesVisited, requestInformations, responseInformations, swsRegs, '', swsData, swsScopes, swsClients, cacheStorage, cookiesStore, swsDuplicates, xData, pagesLinks, pagesVisitedOffline, domInfos, domInfosOffline, pagesLinksOffline, coveragePages ]
 ```
@@ -293,4 +303,74 @@ An array containing the list of in-scope pages URLs navigated when the coverage 
 
 
 ## swscontent
-The folder `swscontent` is written by []
+The folder `swscontent` is written by the [service worker hooker](SWHOOKING.md), i.e. Mitmproxy or an extension. Each item within this folder is a JSON string with the following fields:
+- `url`: the service worker URL
+- `purl`: the URL of the page that triggered the service worker registration/update. 
+- `body`: the service worker code
+- `response`: the service worker response headers, mostly only security related headers
+```json
+[
+    "content-security-policy",
+    "content-security-policy-report-only",
+    "feature-policy",
+    "x-frame-options",
+    "x-content-security-policy",
+    "x-content-security-policy-report-only",
+    "cross-origin-embedder-policy",
+    "cross-origin-opener-policy",
+    "cross-origin-resource-policy",
+    "x-content-type-options",
+    "permissions-policy",
+    "service-worker-allowed",
+    "content-type"
+]
+```
+- `request`: request headers, mostly security headers.
+```json
+[
+    "referrer-policy",
+    "referer-policy",
+    "report-to",
+    "referer"
+]
+```
+Note that item in this folder may be duplicates, i.e. same service worker being registered multiple times: this choice was made for performance reasons, as well as to avoid race conditions (as multiple Mitmproxy instances may be writing the `swscontent` folder) and finally because we did not have storage constraints (the overhead of storing the same service workers code multiple times is negligible) we do not perform checks on previous. 
+
+> **Note**
+> Set [swscontent](CONIFG.md#swscontent) to `true` in order to enable the logging of service workers code
+
+
+## importedscripts
+The folder `importedscripts` contains additional scripts imported by service workers. Its structure is similar to that of the [swscontent](#swscontent) above:
+- `url`: the imported script URL
+- `body`: the imported script body
+- `swurl`: the service worker in which the script is imported and executed, i.e. the value of the `referer` header.
+- `request`: the imported scripts request headers
+- `response`: the imported scripts response headers
+
+Note that the items are likely duplicated. In particular, scripts that are imported by different service workers will be logged as many times as necessary.
+
+To ensure that the `referer` header of imported scripts is present and correspond to the whole service worker URL, we (re)set the [Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header of service workers to `unsafe-url`. This is only done when the logging of imported scripts is enabled. 
+
+> **Note**
+> Set [importedscripts](CONIFG.md#importedscripts) to `true` in order to enable the logging of imported scripts codes
+
+
+## webmanfiests
+The folder `webmanifests` contains the content of [web manifests](https://developer.mozilla.org/en-US/docs/Web/Manifest) resources. Browsers typically downloads the content of the manifest to extract information that will be presented to the user willing to install the web app as a [PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps). The structure of the information saved in this folder include:
+- `url`: the web manfiest URL
+- `body`: the web manifest body (This is a JSON file)
+- `request`: the web manifest request headers
+- `response`: the web manifest response headers
+- `purl`: the page that included the web manifest
+  
+> **Note**
+> Set [webmanifests](CONIFG.md#webmanifests) to `true` in order to enable the logging of web manifests content
+
+> **Warning**
+> There is a folder named `manifests` which contains manifest files required when automation is done with an extension. They are not to be confused. 
+
+
+## webworkers
+
+## documents
