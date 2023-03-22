@@ -27,12 +27,12 @@ The command ```node gen_swhook.js``` outputs `swhook.js`, which our service work
 		"CookieStore.prototype": ["get", "set", "getAll", "delete"],
 		"registration": ["showNotification", "getNotifications", "update", "unregister"],
 		"eval": true,
-		"atob": true, 
-		"btoa": true,
-		"decodeURIComponent": true,
-		"decodeURI": true,
-		"encodeURI": true,
-		"URLSearchParams.prototype": ["get", "entries", "has", "getAll", "keys", "set", "sort", "forEach", "toString", "values", "delete", "append"]
+		"atob": true, "btoa": true,
+		"encodeURIComponent": true, "decodeURIComponent": true,
+		"decodeURI": true, "encodeURI": true,
+		"escape": true, "unescape": true,
+		"URLSearchParams.prototype": ["get", "entries", "has", "getAll", "keys", "set", "sort", "forEach", "toString", "values", "delete", "append"],
+		"EventTarget.prototype": ["removeEventListener"]
 	},
 	"BroadcastChannel": true,
 	"dumpswheadersandcontent": false
@@ -79,6 +79,7 @@ The APIs that are hooked are summarized as follows.
 | [ServiceWorkerRegistration](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration) | [showNotification](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/showNotification), [unregister](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/unregister), [update](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/update), [getNotifications](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/getNotifications) | Manage a service worker registration | `proxyAndRegisterArguments` |
 | [NavigationPreload](https://developer.mozilla.org/en-US/docs/Web/API/NavigationPreloadManager) | [enable](https://developer.mozilla.org/en-US/docs/Web/API/NavigationPreloadManager/enable), [disable](https://developer.mozilla.org/en-US/docs/Web/API/NavigationPreloadManager/disable), [setHeaderValue](https://developer.mozilla.org/en-US/docs/Web/API/NavigationPreloadManager/setHeaderValue), [getState](https://developer.mozilla.org/en-US/docs/Web/API/NavigationPreloadManager/getState) | preload navigation requests | `proxyAndRegisterArguments` |
 | [CookieStore](https://developer.mozilla.org/en-US/docs/Web/API/CookieStore) | [get](https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get), [set](https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/set), [delete](https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete), [getAll](https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/getAll) | getting/settings cookies | `proxyAndRegisterArguments` |
+[removeEventListener](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener) | [install](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/install_event), [activate](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/activate_event), [fetch](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/fetch_event), [message](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/message_event), [push](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/push_event), [sync](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/sync_event), [notificationclick](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/notificationclick_event), [notificationclose](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/notificationclose_event), [periodicsync](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/periodicsync_event), [pushsubscriptionchange](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/pushsubscriptionchange_event) | remove a registered handler for an event  | `proxyAndRegisterArguments` | 
 | [Crypto](https://developer.mozilla.org/en-US/docs/Web/API/Crypto) | [getRandomValues](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues), [randomUUID](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID) | random values generation | `proxyAndRegisterArguments` |
 | [SubtleCrypto](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto) | [encrypt](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/encrypt), [decrypt](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/decrypt), [sign](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/sign), [verify](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/verify), [digest](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest), [generateKey](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/generateKey), [deriveKey](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey), [deriveBits](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveBits), [importKey](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/importKey), [exportKey](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/exportKey), [wrapKey](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/wrapKey), [unwrapKey](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/unwrapKey) | cryptographic primitives | `proxyAndRegisterArguments` |
 | [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval) | | evaluates JavaScript code represented as string | `proxyAndRegisterArguments` |
@@ -91,6 +92,7 @@ The APIs that are hooked are summarized as follows.
 | [escape](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/escape) | | escape strings | `proxyAndRegisterArguments` |
 | [unescape](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/unescape) | | unescape strings | `proxyAndRegisterArguments` |
 | [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) | [append](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/append), [delete](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/delete), [entries](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/entries), [forEach](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/forEach), [get](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/get), [getAll](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/getAll), [has](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/has), [keys](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/keys), [set](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/set), [sort](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/sort), [toString](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/toString), [values](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/values) | manipulating URLs arguments | `proxyAndRegisterArguments` |
+
 
 ## Collected Data Structure
 The logs collected for each 
@@ -258,5 +260,10 @@ This method is only supported by Firefox browsers, on Desktop and Android. Firef
 
 
 # Service workers logs collection
-- BroadcastChannel
-- Puppeteer / Playwright
+Collecting the service workers logs present a couple of interesting challenges. The solution we retained are described below, and hugely depends on the way the service workers are hooked
+
+## BroadcastChannel
+[BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API) makes it possible to communicate between same-origin browsing contexts. Basically, web pages, extensions content scripts can listen on a named channel, i.e. `serviceworkerinformationtobesaved`, and whenever a service worker has information to save, it just writes them on the channel of that name. We leverage this API to post the service workers APIs logs collected by `swhook.js`. And from navigated webpages, or extensions content scripts, the data is received and relayed to the automation party (i.e. background script for an extension or Puppeteer/Playwright in the case of CDP). 
+ 
+## CDP
+

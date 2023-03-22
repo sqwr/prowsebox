@@ -1,12 +1,12 @@
 # ProwseBox Data
 
-- [swstrancohomes](#swstrancohomes)
-- [mitmswstrancohomes](#mitmswstrancohomes)
-- [swscontent](#swscontent)
-- [importedscripts](#importedscripts)
-- [webmanifests](#webmanfiests)
-- [webworkers](#webworkers)
-- [documents](#documents)
+- [swstrancohomes](#swstrancohomes): service workers APIs, DOM resources, navigated URLs, etc.
+- [mitmswstrancohomes](#mitmswstrancohomes): service workers APIs when DOM is not present
+- [swscontent](#swscontent): service workers codes
+- [importedscripts](#importedscripts): additional codes imported by service workers
+- [webmanifests](#webmanfiests): web manifests fetched by browsers
+- [webworkers](#webworkers): dedicated and shared workers loaded by web pages
+- [documents](#documents): security headers in top-level navigation pages
 
 
 ## swstrancohomes
@@ -302,6 +302,9 @@ This object was meant to contain [pageLinks](#pageslinks) when testing service w
 An array containing the list of in-scope pages URLs navigated when the coverage phase is enabled. It is this list of URLs which is used during the separate offline phase in order to assess service workers which work when the user is offline
 
 
+## mitmswstrancohomes
+This folder stores additional (potentially duplicates) service workers APIs logs. This is particularly indicated for events occuring while the service worker does not have any page client to [broadcast](SWHOOKING.md#BroadcastChannel) the logs to. The structure of the information stored in this folder is [described here](#swsdata): the nested part under the `datasize$i` sections.
+
 ## swscontent
 The folder `swscontent` is written by the [service worker hooker](SWHOOKING.md), i.e. Mitmproxy or an extension. Each item within this folder is a JSON string with the following fields:
 - `url`: the service worker URL
@@ -372,5 +375,19 @@ The folder `webmanifests` contains the content of [web manifests](https://develo
 
 
 ## webworkers
+This folder contains [shared](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker) and [dedicated](https://developer.mozilla.org/en-US/docs/Web/API/Worker) workers codes. Each item is a JSON file with the following fields:
+- `url`: the URL of the worker
+- `purl`: the page that spawned the worker
+- `wtype`: the type of worker: `worker` or `sharedworker`
+- `request`: filtered request headers
+- `response`: filtered response headers
+
+> **Note**
+> Set [webworkers](CONIFG.md#webworkers) to `true` in order to enable the logging of web workers content
 
 ## documents
+This folder contains filtered (security) headers of top-level navigations (HTML documents). Each item is a JSON file with the following fields:
+- `url`: the page URL
+- `request`: the filtered request headers
+- `response`: the filtered response headers
+
