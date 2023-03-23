@@ -24,6 +24,7 @@ Cons
 Pros:
 - Work with full fledged headed browsers: more difficult to detect by bot detectors
 - Can collect service workers APIs logs occurring without actively navigated pages (i.e. push notifications)
+- Setup can be fully automated
 
 Cons:
 - Headed browsers may use more resources
@@ -35,13 +36,23 @@ Cons:
 
 
 ## webPage
+This automation method has been added mostly to support mobile browsers on iOS, as none of the other methods work on this platform. Nonetheless, this method works for most browsers on all plaforms, provided that they accept the custom certificate authority (CA) of the Mitmproxy server.
+
+In a nutshell:
+1. Configure the 
+
 Pros:
-- Works with all browsers (provided that they accept custom CAs)
+- Works with all browsers, 
+- Can be used to test 
 
 Cons:
-- Parallelization is limited to a URL at a time
-- Noti
-
+- Require manual interactions to start the navigation of URLs (in particular on mobile browsers). 
+  - On the Desktop br
+  - On Android, one can leverage tools like [ADB](https://developer.android.com/studio/command-line/adb) to automate the navigation of URLs in browsers. 
+- Notifications permissions cannot be automatically granted to navigated websites
+- Require manual interactions for the setup on mobile devices:
+  - installing the custom CA on the mobile devices
+- Offline mode is not supported
 
 ## Mitmproxy
 
